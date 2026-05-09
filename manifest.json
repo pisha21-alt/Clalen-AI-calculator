@@ -1,0 +1,25 @@
+{
+  "name": "Clalen CL Calculator",
+  "short_name": "클라렌 Rx",
+  "description": "AR-K 검사값을 Clalen 콘택트렌즈 처방값으로 변환하는 계산기",
+  "start_url": "/index.html",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#185FA5",
+  "orientation": "portrait-primary",
+  "lang": "ko",
+  "icons": [
+    {
+      "src": "icons/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "icons/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}

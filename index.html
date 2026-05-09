@@ -1,0 +1,414 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="theme-color" content="#185FA5">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="클라렌 Rx">
+<meta name="description" content="AR-K 검사값을 Clalen 콘택트렌즈 처방값으로 변환">
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+<title>Clalen CL Calculator</title>
+<style>
+  *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+  html,body{height:100%;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI','Noto Sans KR',sans-serif;background:#f4f6f9;color:#1a1a2e}
+  
+  /* ── 상단 헤더 ── */
+  .topbar{position:sticky;top:0;z-index:100;background:#185FA5;padding:env(safe-area-inset-top) 0 0;box-shadow:0 2px 8px rgba(24,95,165,.25)}
+  .topbar-inner{display:flex;align-items:center;gap:10px;padding:12px 16px}
+  .top-logo{width:34px;height:34px;border-radius:8px;background:rgba(255,255,255,.2);display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;color:#fff;flex-shrink:0}
+  .top-title{font-size:16px;font-weight:600;color:#fff}
+  .top-sub{font-size:11px;color:rgba(255,255,255,.75);margin-top:1px}
+
+  /* ── 스크롤 본문 ── */
+  .body{padding:16px 16px calc(env(safe-area-inset-bottom)+16px);max-width:520px;margin:0 auto}
+
+  /* ── 카드 ── */
+  .card{background:#fff;border-radius:14px;padding:16px;margin-bottom:12px;box-shadow:0 1px 4px rgba(0,0,0,.07)}
+  .card-title{font-size:11px;font-weight:600;color:#888;letter-spacing:.07em;text-transform:uppercase;margin-bottom:12px}
+
+  /* ── 눈 입력 그리드 ── */
+  .eye-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+  .eye-box{background:#f8f9fc;border-radius:10px;padding:12px}
+  .eye-hd{font-size:13px;font-weight:600;color:#444;margin-bottom:10px;display:flex;align-items:center;gap:7px}
+  .dot{width:9px;height:9px;border-radius:50%;flex-shrink:0}
+  .dot-od{background:#185FA5}.dot-os{background:#0F6E56}
+  .frow{display:flex;align-items:center;gap:6px;margin-bottom:7px}
+  .frow:last-child{margin-bottom:0}
+  .flabel{font-size:11px;color:#888;width:30px;flex-shrink:0;font-weight:500}
+  .frow select{flex:1;min-width:0;padding:6px 6px;font-size:12px;border:1px solid #dde1e9;border-radius:8px;background:#fff;color:#1a1a2e;cursor:pointer;font-family:inherit;-webkit-appearance:none;appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='%23888'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 8px center}
+
+  /* ── CL 환산값 ── */
+  .rx-preview{background:#EEF4FB;border-radius:10px;padding:12px;margin-top:10px}
+  .rx-preview-label{font-size:10px;color:#666;margin-bottom:8px}
+  .rx-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+  .rx-item .rl{font-size:10px;color:#888;margin-bottom:3px}
+  .rx-item .rv{font-size:15px;font-weight:700;color:#185FA5;font-variant-numeric:tabular-nums;letter-spacing:-.01em}
+
+  /* ── 필터 ── */
+  .filter-row{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:7px;align-items:center}
+  .filter-key{font-size:11px;color:#888;width:28px;flex-shrink:0;font-weight:600}
+  .chip{padding:5px 11px;font-size:12px;border:1.5px solid #dde1e9;border-radius:20px;cursor:pointer;background:#fff;color:#666;font-family:inherit;font-weight:400;transition:all .15s}
+
+  /* ── 버튼 영역 ── */
+  .btn-row{display:flex;gap:8px;margin-bottom:12px}
+  .reset-btn{flex-shrink:0;padding:14px 18px;font-size:13px;font-weight:600;border:1.5px solid #dde1e9;border-radius:12px;background:#fff;color:#888;cursor:pointer;font-family:inherit;transition:all .15s}
+  .reset-btn:active{background:#f4f6f9;transform:scale(.97)}
+  .run-btn{flex:1}
+  .run-btn button{width:100%;padding:14px;font-size:15px;font-weight:600;border:none;border-radius:12px;background:#185FA5;color:#fff;cursor:pointer;font-family:inherit;box-shadow:0 4px 12px rgba(24,95,165,.25)}
+  .run-btn button:active{opacity:.85;transform:scale(.99)}
+
+  /* ── 결과 카드 ── */
+  .results-section-title{font-size:11px;font-weight:600;color:#888;letter-spacing:.06em;margin:4px 0 8px}
+  .match-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px}
+  .mcard{background:#fff;border:1.5px solid #eee;border-radius:12px;padding:10px 10px 10px 14px;overflow:hidden;position:relative}
+  .mcard.hit{border-color:#9FE1CB}
+  .mcard.miss{opacity:.45}
+  .mcard-stripe{position:absolute;left:0;top:0;width:4px;height:100%;border-radius:2px 0 0 2px}
+  .badge-row{display:flex;gap:3px;flex-wrap:wrap;margin-bottom:5px}
+  .bdg{font-size:9px;padding:2px 5px;border-radius:4px;font-weight:600;white-space:nowrap}
+  .bdg-sil{background:#E6F1FB;color:#185FA5}
+  .bdg-hyd{background:#f0f0f0;color:#666}
+  .bdg-col{background:#FFF3DE;color:#B07010}
+  .bdg-clr{background:#f0f0f0;color:#666}
+  .bdg-toric{background:#E1F5EE;color:#0F6E56}
+  .bdg-per{background:#f0f0f0;color:#666}
+  .mcard-name{font-size:11px;font-weight:600;color:#1a1a2e;margin-bottom:6px;line-height:1.35}
+  .rx-lines{border-top:1px solid #f0f0f0;padding-top:5px;display:flex;flex-direction:column;gap:3px}
+  .rx-line{display:flex;align-items:center;gap:5px}
+  .rx-eye{font-size:10px;color:#888;width:20px;flex-shrink:0;font-weight:600}
+  .rx-val{font-size:11px;font-weight:600;font-variant-numeric:tabular-nums}
+  .rx-val.ok{color:#0F6E56}.rx-val.na{color:#c0392b}
+  .note{font-size:10px;color:#aaa;margin-top:4px;margin-bottom:80px}
+
+  /* ── 설치 안내 배너 ── */
+  .install-banner{background:#EEF4FB;border-radius:10px;padding:12px 14px;display:flex;align-items:center;gap:10px;margin-bottom:12px}
+  .install-banner.hidden{display:none}
+  .install-icon{font-size:20px}
+  .install-text{flex:1;font-size:12px;color:#185FA5;line-height:1.5}
+  .install-btn{padding:6px 12px;font-size:12px;font-weight:600;border:none;border-radius:8px;background:#185FA5;color:#fff;cursor:pointer;white-space:nowrap;font-family:inherit}
+  .install-close{font-size:16px;color:#aaa;cursor:pointer;padding:4px}
+</style>
+</head>
+<body>
+
+<!-- 상단 헤더 -->
+<div class="topbar">
+  <div class="topbar-inner">
+    <div class="top-logo">CL</div>
+    <div>
+      <div class="top-title">Clalen CL Calculator</div>
+      <div class="top-sub">AR-K → Clalen 처방 매칭</div>
+    </div>
+  </div>
+</div>
+
+<!-- 메인 본문 -->
+<div class="body">
+
+  <!-- 설치 안내 배너 -->
+  <div class="install-banner" id="install-banner">
+    <div class="install-icon">📲</div>
+    <div class="install-text">홈 화면에 추가하면 앱처럼 사용할 수 있어요</div>
+    <button class="install-btn" id="install-btn" onclick="triggerInstall()">설치</button>
+    <span class="install-close" onclick="closeBanner()">✕</span>
+  </div>
+
+  <!-- AR-K 입력 -->
+  <div class="card">
+    <div class="card-title">AR-K 검사값 입력</div>
+    <div class="eye-grid">
+      <div class="eye-box">
+        <div class="eye-hd"><div class="dot dot-od"></div>우안 (OD)</div>
+        <div class="frow"><span class="flabel">SPH</span><select id="od-sph"></select></div>
+        <div class="frow"><span class="flabel">CYL</span><select id="od-cyl"></select></div>
+        <div class="frow"><span class="flabel">AXIS</span><select id="od-axis"></select></div>
+      </div>
+      <div class="eye-box">
+        <div class="eye-hd"><div class="dot dot-os"></div>좌안 (OS)</div>
+        <div class="frow"><span class="flabel">SPH</span><select id="os-sph"></select></div>
+        <div class="frow"><span class="flabel">CYL</span><select id="os-cyl"></select></div>
+        <div class="frow"><span class="flabel">AXIS</span><select id="os-axis"></select></div>
+      </div>
+    </div>
+    <div class="rx-preview">
+      <div class="rx-preview-label">Clalen CL 처방값 (정점간 거리 12mm 보정 + 최근접 도수 적용)</div>
+      <div class="rx-grid">
+        <div class="rx-item"><div class="rl">OD (S / C / A)</div><div class="rv" id="od-rx-val">—</div></div>
+        <div class="rx-item"><div class="rl">OS (S / C / A)</div><div class="rv" id="os-rx-val">—</div></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 필터 -->
+  <div class="card">
+    <div class="card-title">제품 필터</div>
+    <div class="filter-row" id="f-mat"></div>
+    <div class="filter-row" id="f-col"></div>
+    <div class="filter-row" id="f-func"></div>
+    <div class="filter-row" id="f-per"></div>
+  </div>
+
+  <!-- 버튼 영역 -->
+  <div class="btn-row">
+    <button class="reset-btn" onclick="resetAll()">↺ 초기화</button>
+    <div class="run-btn">
+      <button onclick="runMatch()">최적 브랜드 매칭 실행</button>
+    </div>
+  </div>
+
+  <!-- 결과 영역 -->
+  <div id="results"></div>
+
+</div>
+
+<script>
+// ── 제품 DB ──
+const DB=[
+  {name:"아스트라 에스텔",재질:"하이드로겔",색상:"컬러",기능:"근시",주기:"하루용",
+   sph:[-10,-9.5,-9,-8.5,-8,-7.5,-7,-6.5,-6,-5.75,-5.5,-5.25,-5,-4.75,-4.5,-4.25,-4,-3.75,-3.5,-3.25,-3,-2.75,-2.5,-2.25,-2,-1.75,-1.5,-1.25,-1,-0.75,-0.5,0],cyl:[],axis:[]},
+  {name:"아스트라 글리터",재질:"하이드로겔",색상:"컬러",기능:"근시",주기:"하루용",
+   sph:[-10,-9.5,-9,-8.5,-8,-7.5,-7,-6.5,-6,-5.75,-5.5,-5.25,-5,-4.75,-4.5,-4.25,-4,-3.75,-3.5,-3.25,-3,-2.75,-2.5,-2.25,-2,-1.75,-1.5,-1.25,-1,-0.75,-0.5,0],cyl:[],axis:[]},
+  {name:"클라렌 하루용",재질:"하이드로겔",색상:"투명",기능:"근시",주기:"하루용",
+   sph:[-12,-11.5,-11,-10.5,-10,-9.5,-9,-8.5,-8,-7.5,-7,-6.5,-6,-5.75,-5.5,-5.25,-5,-4.75,-4.5,-4.25,-4,-3.75,-3.5,-3.25,-3,-2.75,-2.5,-2.25,-2,-1.75,-1.5,-1.25,-1,-0.75,-0.5,0],cyl:[],axis:[]},
+  {name:"오투오투 하루용",재질:"실리콘하이드로겔",색상:"투명",기능:"근시",주기:"하루용",
+   sph:[-12,-11.5,-11,-10.5,-10,-9.5,-9,-8.5,-8,-7.5,-7,-6.5,-6,-5.5,-5,-4.75,-4.5,-4.25,-4,-3.75,-3.5,-3.25,-3,-2.75,-2.5,-2.25,-2,-1.75,-1.5,-1.25,-1,-0.75,-0.5,0],cyl:[],axis:[]},
+  {name:"오투오투 하루용 난시",재질:"실리콘하이드로겔",색상:"투명",기능:"난시",주기:"하루용",
+   sph:[-9,-8.5,-8,-7.5,-7,-6.5,-6,-5.5,-5,-4.75,-4.5,-4.25,-4,-3.75,-3.5,-3.25,-3,-2.75,-2.5,-2.25,-2,-1.75,-1.5,-1.25,-1],cyl:[-0.75,-1.25,-1.75],axis:[10,20,90,160,170]},
+  {name:"오투오투 컬러 하루용 난시",재질:"실리콘하이드로겔",색상:"컬러",기능:"난시",주기:"하루용",
+   sph:[-9,-8.5,-8,-7.5,-7,-6.5,-6,-5.5,-5,-4.75,-4.5,-4.25,-4,-3.75,-3.5,-3.25,-3,-2.75,-2.5,-2.25,-2,-1.75,-1.5,-1.25,-1,-0.75,-0.5,0],cyl:[-0.75,-1.25,-1.75],axis:[]},
+  {name:"오투오투 컬러 하루용",재질:"실리콘하이드로겔",색상:"컬러",기능:"근시",주기:"하루용",
+   sph:[-10,-9.5,-9,-8.5,-8,-7.5,-7,-6.5,-6,-5.5,-5,-4.75,-4.5,-4.25,-4,-3.75,-3.5,-3.25,-3,-2.75,-2.5,-2.25,-2,-1.75,-1.5,-1.25,-1,-0.75,-0.5,0],cyl:[],axis:[]},
+  {name:"오투오투 미셀리아",재질:"실리콘하이드로겔",색상:"컬러",기능:"근시",주기:"하루용",
+   sph:[-8,-7.5,-7,-6.5,-6,-5.5,-5,-4.75,-4.5,-4.25,-4,-3.75,-3.5,-3.25,-3,-2.75,-2.5,-2.25,-2,-1.75,-1.5,-1.25,-1,0],cyl:[],axis:[]},
+  {name:"오투오투 M 난시",재질:"실리콘하이드로겔",색상:"투명",기능:"난시",주기:"한달용",
+   sph:[-9,-8.5,-8,-7.5,-7,-6.5,-6,-5.5,-5,-4.75,-4.5,-4.25,-4,-3.75,-3.5,-3.25,-3,-2.75,-2.5,-2.25,-2,-1.75,-1.5,-1.25,-1],cyl:[-0.75,-1.25,-1.75],axis:[10,20,90,160,170,180]},
+  {name:"오투오투 M 그랩수",재질:"실리콘하이드로겔",색상:"투명",기능:"근시",주기:"한달용",
+   sph:[-10,-9.5,-9,-8.5,-8,-7.5,-7,-6.5,-6,-5.5,-5,-4.75,-4.5,-4.25,-4,-3.75,-3.5,-3.25,-3,-2.75,-2.5,-2.25,-2,-1.75,-1.5,-1.25,-1],cyl:[],axis:[]},
+  {name:"오투오투 컬러 M",재질:"실리콘하이드로겔",색상:"컬러",기능:"근시",주기:"한달용",
+   sph:[-9,-8.5,-8,-7.5,-7,-6.5,-6,-5.75,-5.5,-5.25,-5,-4.75,-4.5,-4.25,-4,-3.75,-3.5,-3.25,-3,-2.75,-2.5,-2.25,-2,-1.75,-1.5,-1.25,-1,-0.75,-0.5,0],cyl:[],axis:[]},
+  {name:"아이리스",재질:"하이드로겔",색상:"컬러",기능:"근시",주기:"하루용",
+   sph:[-10,-9.5,-9,-8.5,-8,-7.5,-7,-6.5,-6,-5.75,-5.5,-5.25,-5,-4.75,-4.5,-4.25,-4,-3.75,-3.5,-3.25,-3,-2.75,-2.5,-2.25,-2,-1.75,-1.5,-1.25,-1,-0.75,-0.5,0],cyl:[],axis:[]},
+  {name:"아이리스 알리샤 (난시)",재질:"하이드로겔",색상:"컬러",기능:"난시",주기:"하루용",
+   sph:[-7,-6.5,-6,-5.75,-5.5,-5.25,-5,-4.75,-4.5,-4.25,-4,-3.75,-3.5,-3.25,-3,-2.75,-2.5,-2.25,-2,-1.75,-1.5,-1.25,-1,-0.75,-0.5,0],cyl:[-0.75,-1.25,-1.75],axis:[]},
+  {name:"아이리스 헤일로 (난시)",재질:"하이드로겔",색상:"컬러",기능:"난시",주기:"하루용",
+   sph:[-9,-8.5,-8,-7.5,-7,-6.5,-6,-5.75,-5.5,-5.25,-5,-4.75,-4.5,-4.25,-4,-3.75,-3.5,-3.25,-3,-2.75,-2.5,-2.25,-2,-1.75,-1.5,-1.25,-1,-0.75,-0.5,0],cyl:[-0.75,-1.25,-1.75],axis:[]},
+  {name:"아이리스 시어브라운",재질:"하이드로겔",색상:"컬러",기능:"근시",주기:"2주용",
+   sph:[-10,-9.5,-9,-8.5,-8,-7.5,-7,-6.5,-6,-5.75,-5.5,-5.25,-5,-4.75,-4.5,-4.25,-4,-3.75,-3.5,-3.25,-3,-2.75,-2.5,-2.25,-2,-1.75,-1.5,-1.25,-1,-0.75,-0.5,0],cyl:[],axis:[]},
+  {name:"MorningQ S38",재질:"하이드로겔",색상:"투명",기능:"근시",주기:"장기착용",
+   sph:[-20,-19.5,-19,-18.5,-18,-17.5,-17,-16.5,-16,-15.5,-15,-14.5,-14,-13.5,-13,-12.5,-12,-11.5,-11,-10.5,-10,-9.5,-9,-8.5,-8,-7.5,-7,-6.5,-6,-5.75,-5.5,-5.25,-5,-4.75,-4.5,-4.25,-4,-3.75,-3.5,-3.25,-3,-2.75,-2.5,-2.25,-2,-1.75,-1.5,-1.25,-1,-0.75,-0.5,-0.25,0],cyl:[],axis:[]},
+  {name:"MorningQ S45",재질:"하이드로겔",색상:"투명",기능:"근시",주기:"장기착용",
+   sph:[-10,-9.5,-9,-8.5,-8,-7.5,-7,-6.5,-6,-5.75,-5.5,-5.25,-5,-4.75,-4.5,-4.25,-4,-3.75,-3.5,-3.25,-3,-2.75,-2.5,-2.25,-2,-1.75,-1.5,-1.25,-1],cyl:[],axis:[]},
+  {name:"MorningQ Toric 38",재질:"하이드로겔",색상:"투명",기능:"난시",주기:"장기착용",
+   sph:[-10,-9.5,-9,-8.5,-8,-7.5,-7,-6.5,-6,-5.5,-5,-4.75,-4.5,-4.25,-4,-3.75,-3.5,-3.25,-3,-2.75,-2.5,-2.25,-2,-1.75,-1.5,-1.25,-1,-0.75,-0.5,-0.25,0],cyl:[-0.75,-1.25,-1.75,-2.25,-2.75],axis:[10,20,30,80,90,150,160,170,180]},
+];
+
+const CLALEN_SPH=[0,-0.25,-0.5,-0.75,-1,-1.25,-1.5,-1.75,-2,-2.25,-2.5,-2.75,-3,-3.25,-3.5,-3.75,-4,-4.25,-4.5,-4.75,-5,-5.25,-5.5,-5.75,-6,-6.5,-7,-7.5,-8,-8.5,-9,-9.5,-10,-10.5,-11,-11.5,-12,-12.5,-13,-13.5,-14,-14.5,-15,-15.5,-16,-16.5,-17,-17.5,-18,-18.5,-19,-19.5,-20];
+const CLALEN_CYL=[0,-0.75,-1.25,-1.75,-2.25,-2.75];
+let filters={재질:'전체',색상:'전체',기능:'전체',주기:'전체'};
+let deferredPrompt=null;
+
+// ── PWA 설치 ──
+window.addEventListener('beforeinstallprompt',e=>{
+  e.preventDefault();deferredPrompt=e;
+  document.getElementById('install-banner').classList.remove('hidden');
+});
+window.addEventListener('appinstalled',()=>{
+  document.getElementById('install-banner').classList.add('hidden');
+});
+function triggerInstall(){
+  if(deferredPrompt){deferredPrompt.prompt();deferredPrompt=null;}
+}
+function closeBanner(){
+  document.getElementById('install-banner').classList.add('hidden');
+}
+
+// ── 광학 계산 ──
+function r25(v){return Math.round(v*4)/4}
+function vtx(f){if(f===0)return 0;return r25(f/(1-0.012*f))}
+function nearest(target,list){
+  if(!list||!list.length)return null;
+  return list.reduce((a,b)=>{
+    const da=Math.abs(a-target),db=Math.abs(b-target);
+    if(Math.abs(da-db)<0.001)return b<a?b:a;
+    return db<da?b:a;
+  });
+}
+function nearestAxis(a,list){
+  if(!list||!list.length)return Math.round(a/10)*10;
+  return list.reduce((best,av)=>{
+    const d=Math.min(Math.abs(av-a),Math.abs(av-a-180),Math.abs(av-a+180));
+    const db=Math.min(Math.abs(best-a),Math.abs(best-a-180),Math.abs(best-a+180));
+    return d<db?av:best;
+  });
+}
+function convertRx(s,c,a){
+  s=parseFloat(s)||0;c=parseFloat(c)||0;a=parseInt(a)||0;
+  if(c===0){
+    const cs=vtx(s),snap=nearest(cs,CLALEN_SPH);
+    return{sph:cs,cyl:0,axis:0,snapSph:snap,snapCyl:0,hasCyl:false};
+  }
+  const cs=vtx(s),cc=r25(vtx(s+c)-vtx(s));
+  return{sph:cs,cyl:cc,axis:a,snapSph:nearest(cs,CLALEN_SPH),snapCyl:nearest(cc,CLALEN_CYL.filter(v=>v!==0)),hasCyl:true};
+}
+function matchEye(rx,p){
+  const t=rx.hasCyl&&Math.abs(rx.cyl)>=0.49;
+  if(t&&p.기능!=='난시'){
+    const se=r25(rx.sph+rx.cyl/2),ms=nearest(se,p.sph);
+    if(ms===null||Math.abs(ms-se)>0.375)return null;
+    return{sph:ms,cyl:0,axis:0,note:'SE'};
+  }
+  if(t&&p.기능==='난시'){
+    const ms=nearest(rx.sph,p.sph);
+    if(ms===null||Math.abs(ms-rx.sph)>0.375)return null;
+    const mc=nearest(rx.cyl,p.cyl);
+    if(mc===null||Math.abs(mc-rx.cyl)>0.375)return null;
+    const ma=p.axis.length>0?nearestAxis(rx.axis,p.axis):Math.round(rx.axis/10)*10;
+    return{sph:ms,cyl:mc,axis:ma};
+  }
+  const ms=nearest(rx.sph,p.sph);
+  if(ms===null||Math.abs(ms-rx.sph)>0.375)return null;
+  return{sph:ms,cyl:0,axis:0};
+}
+function fmtD(v){if(v===null||v===undefined)return'?';const n=parseFloat(v);return(n>=0?'+':'')+n.toFixed(2)}
+function fmtSCA(rx){
+  if(!rx)return'N/A';
+  if(!rx.cyl||rx.cyl===0)return fmtD(rx.sph);
+  return`${fmtD(rx.sph)} / ${fmtD(rx.cyl)} / ${rx.axis}°`;
+}
+function fmtPrev(rx){
+  if(!rx)return'—';
+  if(!rx.hasCyl)return fmtD(rx.snapSph);
+  return`${fmtD(rx.snapSph)} / ${fmtD(rx.snapCyl)} / ${Math.round(rx.axis/10)*10}°`;
+}
+
+// ── 초기화 기능 ──
+function resetAll(){
+  // AR-K 입력값 → 0.00
+  ['od-sph','os-sph'].forEach(id=>{document.getElementById(id).value='0';});
+  ['od-cyl','os-cyl'].forEach(id=>{document.getElementById(id).value='0';});
+  ['od-axis','os-axis'].forEach(id=>{document.getElementById(id).value='0';});
+  // 필터 → 전체
+  filters={재질:'전체',색상:'전체',기능:'전체',주기:'전체'};
+  ['f-mat','f-col','f-func','f-per'].forEach(id=>{
+    const row=document.getElementById(id);
+    row.querySelectorAll('button').forEach((btn,i)=>setActive(btn,i===0));
+  });
+  // 결과 초기화
+  document.getElementById('results').innerHTML='';
+  // 프리뷰 업데이트
+  updatePreview();
+}
+
+// ── 필터 버튼 ──
+function setActive(btn,on){
+  if(on){btn.style.cssText='padding:5px 11px;font-size:12px;border-radius:20px;cursor:pointer;font-family:inherit;border:1.5px solid #185FA5;background:#185FA5;color:#fff;font-weight:600';}
+  else{btn.style.cssText='padding:5px 11px;font-size:12px;border-radius:20px;cursor:pointer;font-family:inherit;border:1.5px solid #dde1e9;background:#fff;color:#666;font-weight:400';}
+}
+function buildFilters(){
+  const defs={'f-mat':{k:'재질',o:['전체','하이드로겔','실리콘하이드로겔']},'f-col':{k:'색상',o:['전체','투명','컬러']},'f-func':{k:'기능',o:['전체','근시','난시']},'f-per':{k:'주기',o:['전체','하루용','2주용','한달용','장기착용']}};
+  Object.entries(defs).forEach(([id,cfg])=>{
+    const row=document.getElementById(id);
+    const lbl=document.createElement('span');lbl.className='filter-key';lbl.textContent=cfg.k;row.appendChild(lbl);
+    cfg.o.forEach(opt=>{
+      const btn=document.createElement('button');
+      btn.textContent=opt;
+      setActive(btn,filters[cfg.k]===opt);
+      btn.onclick=()=>{filters[cfg.k]=opt;row.querySelectorAll('button').forEach(b=>setActive(b,false));setActive(btn,true);};
+      row.appendChild(btn);
+    });
+  });
+}
+
+// ── select 빌드 ──
+function buildSel(id,vals,def){
+  const el=document.getElementById(id);
+  const isAxis=id.includes('axis');
+  el.innerHTML=vals.map(v=>{
+    const label=isAxis?v+'°':(parseFloat(v)>=0?'+':'')+parseFloat(v).toFixed(2);
+    return`<option value="${v}"${Math.abs(v-def)<0.001?' selected':''}>${label}</option>`;
+  }).join('');
+  el.addEventListener('change',updatePreview);
+}
+
+function getRx(){
+  return{
+    od:convertRx(document.getElementById('od-sph').value,document.getElementById('od-cyl').value,document.getElementById('od-axis').value),
+    os:convertRx(document.getElementById('os-sph').value,document.getElementById('os-cyl').value,document.getElementById('os-axis').value)
+  };
+}
+function updatePreview(){
+  const{od,os}=getRx();
+  document.getElementById('od-rx-val').textContent=fmtPrev(od);
+  document.getElementById('os-rx-val').textContent=fmtPrev(os);
+}
+function runMatch(){
+  updatePreview();
+  const{od,os}=getRx();
+  const fl=DB.filter(p=>{
+    if(filters['재질']!=='전체'&&p.재질!==filters['재질'])return false;
+    if(filters['색상']!=='전체'&&p.색상!==filters['색상'])return false;
+    if(filters['기능']!=='전체'&&p.기능!==filters['기능'])return false;
+    if(filters['주기']!=='전체'&&p.주기!==filters['주기'])return false;
+    return true;
+  });
+  const matched=fl.map(p=>{
+    const odM=matchEye(od,p),osM=matchEye(os,p);
+    return{...p,odM,osM,score:(odM?1:0)+(osM?1:0)};
+  }).sort((a,b)=>b.score-a.score);
+  const hits=matched.filter(m=>m.score>0),miss=matched.filter(m=>m.score===0);
+  function badge(p){
+    const m=p.재질==='실리콘하이드로겔'?'<span class="bdg bdg-sil">실리콘</span>':'<span class="bdg bdg-hyd">하이드로겔</span>';
+    const c=p.색상==='컬러'?'<span class="bdg bdg-col">컬러</span>':'<span class="bdg bdg-clr">투명</span>';
+    return m+c+(p.기능==='난시'?'<span class="bdg bdg-toric">난시</span>':'')+`<span class="bdg bdg-per">${p.주기}</span>`;
+  }
+  function stripe(m){if(!m.odM&&!m.osM)return'#ccc';if(m.odM&&m.osM)return'#1D9E75';return m.odM?'#185FA5':'#E9A800';}
+  function card(m){
+    return`<div class="mcard ${m.score>0?'hit':'miss'}">
+      <div class="mcard-stripe" style="background:${stripe(m)}"></div>
+      <div class="badge-row">${badge(m)}</div>
+      <div class="mcard-name">${m.name}</div>
+      <div class="rx-lines">
+        <div class="rx-line"><span class="rx-eye">OD</span><span class="rx-val ${m.odM?'ok':'na'}">${m.odM?fmtSCA(m.odM)+(m.odM.note?' (SE)':''):'범위 초과'}</span></div>
+        <div class="rx-line"><span class="rx-eye">OS</span><span class="rx-val ${m.osM?'ok':'na'}">${m.osM?fmtSCA(m.osM)+(m.osM.note?' (SE)':''):'범위 초과'}</span></div>
+      </div>
+    </div>`;
+  }
+  let html='';
+  if(hits.length)html+=`<div class="results-section-title">매칭 성공 (${hits.length})</div><div class="match-grid">${hits.map(card).join('')}</div>`;
+  if(miss.length)html+=`<div class="results-section-title">범위 초과 (${miss.length})</div><div class="match-grid">${miss.map(card).join('')}</div>`;
+  html+='<div class="note">* SE: 난시 없는 제품에 구면도수 등가값 적용 | 처방값은 Clalen 생산 도수 기준</div>';
+  document.getElementById('results').innerHTML=html;
+  window.scrollTo({top:document.querySelector('.card').offsetTop+300,behavior:'smooth'});
+}
+
+// ── 초기화 ──
+const sphOpts=[6,5.75,5.5,5.25,5,4.75,4.5,4.25,4,3.75,3.5,3.25,3,2.75,2.5,2.25,2,1.75,1.5,1.25,1,0.75,0.5,0.25,0,-0.5,-0.75,-1,-1.25,-1.5,-1.75,-2,-2.25,-2.5,-2.75,-3,-3.25,-3.5,-3.75,-4,-4.25,-4.5,-4.75,-5,-5.25,-5.5,-5.75,-6,-6.25,-6.5,-6.75,-7,-7.25,-7.5,-7.75,-8,-8.25,-8.5,-8.75,-9,-9.25,-9.5,-9.75,-10,-10.25,-10.5,-10.75,-11,-11.25,-11.5,-11.75,-12];
+const cylOpts=[0,-0.25,-0.5,-0.75,-1,-1.25,-1.5,-1.75,-2,-2.25,-2.5,-2.75,-3,-3.25,-3.5,-3.75,-4,-4.25,-4.5,-4.75,-5,-5.5,-6,-6.5,-7,-7.5,-8,-8.5,-9,-9.5,-10];
+const axisOpts=Array.from({length:19},(_,i)=>i*10);
+
+buildSel('od-sph',sphOpts,-2.25);buildSel('os-sph',sphOpts,-2.25);
+buildSel('od-cyl',cylOpts,-1.25);buildSel('os-cyl',cylOpts,-1.0);
+buildSel('od-axis',axisOpts,180);buildSel('os-axis',axisOpts,180);
+buildFilters();updatePreview();
+
+// ── 서비스 워커 등록 ──
+if('serviceWorker' in navigator){
+  navigator.serviceWorker.register('sw.js').catch(()=>{});
+}
+
+// ── iOS: 설치 배너 (Safari는 beforeinstallprompt 미지원) ──
+const isIOS=/iphone|ipad|ipod/i.test(navigator.userAgent);
+const isStandalone=window.navigator.standalone;
+if(isIOS&&!isStandalone){
+  document.getElementById('install-banner').classList.remove('hidden');
+  document.getElementById('install-btn').textContent='방법 보기';
+  document.getElementById('install-btn').onclick=()=>{
+    alert('Safari에서:\n① 하단 공유 버튼 탭\n② "홈 화면에 추가" 선택\n③ "추가" 탭');
+  };
+}
+</script>
+</body>
+</html>
